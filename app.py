@@ -2,6 +2,8 @@ import streamlit as st
 import numpy as np
 import faiss
 from sentence_transformers import SentenceTransformer
+from src.rag import answer_question
+from pypdf import PdfReader
 
 st.title("AI Notes Search Engine")
 
@@ -18,36 +20,39 @@ if query:
     query_embedding = model.encode([query])
     query_embedding = np.array(query_embedding).astype("float32")
 
-    D, I = index.search(query_embedding, 3)
+    D, I = index.search(query_embedding, 1)
 
-    st.subheader("Top Results")
+    best_idx = I[0][0]
 
-    for idx in I[0]:
+    path = f"notes/{filenames[best_idx]}"
 
-        st.write(f"📄 {filenames[idx]}")
+    if filenames[best_idx].endswith(".txt"):
 
-        path = f"notes/{filenames[idx]}"
+        with open(path, "r") as f:
+            text = f.read()
 
-        if filenames[idx].endswith(".txt"):
+    else:
 
-            with open(path, "r") as f:
-                text = f.read()
+        reader = PdfReader(path)
 
-        else:
+        text = ""
 
-            from pypdf import PdfReader
+        for page in reader.pages:
 
-            reader = PdfReader(path)
+            extracted = page.extract_text()
 
-            text = ""
+            if extracted:
+                text += extracted
 
-            for page in reader.pages:
+    answer = answer_question(
+        query,
+        text[:4000]
+    )
 
-                extracted = page.extract_text()
+    st.subheader("Answer")
 
-                if extracted:
-                    text += extracted
+    st.write(answer)
 
-        st.write(text[:500])
-
-        st.divider()
+    with st.expander("Source Document"):
+        st.write(filenames[best_idx])
+        st.write(text[:1000])
