@@ -2,23 +2,36 @@ from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
 import os
+import faiss
+from pypdf import PdfReader
+
 
 model=SentenceTransformer('all-MiniLM-L6-v2')
-
-
-embeddings = np.load("embedding.npy")
 filenames=np.load("filenames.npy")
+
+index=faiss.read_index("notes.index")
 
 query=input("Ask:")
 query_embedding=model.encode([query])
-scores=cosine_similarity(query_embedding,embeddings)[0]
+query_embedding=np.array(query_embedding).astype("float32")
 
-best_idx=scores.argmax()
+D,I=index.search(query_embedding,1)
+best_idx=I[0][0]
 
 print("\nMost Relevant Note:")
 print(filenames[best_idx])
 
-with open(f"notes/{filenames[best_idx]}","r")as f:
-    print(f.read())
-
+file=filenames[best_idx]
+path=f"notes/{file}"
+if file.endswith(".txt"):
+    with open(path,"r")as f:
+        print(f.read())
+elif file.endswith(".pdf"):
+    reader=PdfReader(path)
+    text=""
+    for page in reader.pages:
+        extracted=page.extract_text()
+        if extracted:
+            text+=extracted
+    print(text[:2000])
 

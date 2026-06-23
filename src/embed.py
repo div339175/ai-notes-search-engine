@@ -1,4 +1,5 @@
 from sentence_transformers import SentenceTransformer
+from pypdf import PdfReader
 
 import numpy as np
 import os
@@ -8,10 +9,23 @@ notes=[]
 filenames=[]
 
 for file in os.listdir("notes"):
-    with open(f"notes/{file}","r")as f:
-        text=f.read()
+    path=f"notes/{file}"
+    if file.endswith(".txt"):
+        with open(path,"r")as f:
+            text=f.read()
+    elif file.endswith(".pdf"):
+        reader=PdfReader(path)
+        text=""
+        for page in reader.pages:
+            extracted=page.extract_text()
+
+            if extracted:
+                text+=extracted+"\n"
+    else:
+        continue
     notes.append(text)
     filenames.append(file)
+        
 
 embeddings=model.encode(notes)
 np.save("embedding.npy",embeddings)
