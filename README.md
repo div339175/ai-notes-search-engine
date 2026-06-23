@@ -1,18 +1,42 @@
-# AI Notes Search Engine
+# AI Notes Search Engine with RAG
 
-Search college notes using natural language.
+Search notes and PDFs using semantic search, FAISS vector retrieval, and Gemini-powered question answering.
 
-## Features
+## 🔗 Features
 
 - Semantic Search
-- Embeddings
-- Cosine Similarity
+- Text & PDF Support
+- Sentence Transformer Embeddings
+- FAISS Vector Database
+- Top-K Document Retrieval
+- Streamlit Web Interface
+- Retrieval-Augmented Generation (RAG)
+- Gemini-Powered Question Answering
 
-## Tech Stack
+## 🛠️ Tech Stack
 
 - Python
 - Sentence Transformers
 - FAISS
+- Streamlit
+- Google Gemini API
+- NumPy
+- PyPDF
+- python-dotenv
+
+## 🏗️ Architecture
+
+User Question
+      ↓
+Sentence Transformer
+      ↓
+FAISS Retrieval
+      ↓
+Relevant Document
+      ↓
+Gemini 2.5 Flash
+      ↓
+Generated Answer
 
 ## Run
 
