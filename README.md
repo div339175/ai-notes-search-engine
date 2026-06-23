@@ -26,17 +26,8 @@ Search notes and PDFs using semantic search, FAISS vector retrieval, and Gemini-
 
 ## 🏗️ Architecture
 
-User Question
-      ↓
-Sentence Transformer
-      ↓
-FAISS Retrieval
-      ↓
-Relevant Document
-      ↓
-Gemini 2.5 Flash
-      ↓
-Generated Answer
+User Question -> Sentence Transformer -> FAISS Retrieval -> Relevant Document -> Gemini 2.5 Flash -> Generated Answer
+
 
 ## Run
 
