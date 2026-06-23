@@ -15,7 +15,7 @@ query=input("Ask:")
 query_embedding=model.encode([query])
 query_embedding=np.array(query_embedding).astype("float32")
 
-D,I=index.search(query_embedding,1)
+D,I=index.search(query_embedding,3)
 best_idx=I[0][0]
 
 print("\nMost Relevant Note:")
