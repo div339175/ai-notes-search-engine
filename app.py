@@ -1,3 +1,4 @@
+import os
 import streamlit as st
 import numpy as np
 import faiss
@@ -5,54 +6,61 @@ from sentence_transformers import SentenceTransformer
 from src.rag import answer_question
 from pypdf import PdfReader
 
-st.title("AI Notes Search Engine")
+st.set_page_config(page_title="AI Notes Search Engine", page_icon="📚", layout="centered")
 
-query = st.text_input("Ask a question")
+st.title("📚 AI Notes Search Engine with RAG")
+st.markdown("Semantic search and retrieval-augmented question answering across course notes and documents.")
 
-if query:
+@st.cache_resource
+def load_model():
+    return SentenceTransformer("all-MiniLM-L6-v2")
 
-    model = SentenceTransformer("all-MiniLM-L6-v2")
-
-    filenames = np.load("filenames.npy")
-
+@st.cache_resource
+def load_index_and_files():
+    if not os.path.exists("filenames.npy") or not os.path.exists("notes.index"):
+        return None, None
+    filenames = np.load("filenames.npy", allow_pickle=True)
     index = faiss.read_index("notes.index")
+    return filenames, index
 
-    query_embedding = model.encode([query])
-    query_embedding = np.array(query_embedding).astype("float32")
+model = load_model()
+filenames, index = load_index_and_files()
 
-    D, I = index.search(query_embedding, 1)
+if filenames is None or index is None:
+    st.error("Index or filenames not found! Please run `python src/embed.py` and `python src/build_index.py` first.")
+else:
+    query = st.text_input("Ask a question about your notes:")
 
-    best_idx = I[0][0]
+    if query:
+        with st.spinner("Searching notes..."):
+            query_embedding = model.encode([query])
+            query_embedding = np.array(query_embedding).astype("float32")
 
-    path = f"notes/{filenames[best_idx]}"
+            D, I = index.search(query_embedding, 1)
+            best_idx = I[0][0]
 
-    if filenames[best_idx].endswith(".txt"):
+            path = f"notes/{filenames[best_idx]}"
+            text = ""
 
-        with open(path, "r") as f:
-            text = f.read()
+            if filenames[best_idx].endswith(".txt"):
+                if os.path.exists(path):
+                    with open(path, "r", encoding="utf-8", errors="ignore") as f:
+                        text = f.read()
+            elif filenames[best_idx].endswith(".pdf"):
+                if os.path.exists(path):
+                    reader = PdfReader(path)
+                    for page in reader.pages:
+                        extracted = page.extract_text()
+                        if extracted:
+                            text += extracted + "\n"
 
-    else:
+            if not text:
+                st.warning("Could not extract text from the matched document.")
+            else:
+                answer = answer_question(query, text[:4000])
 
-        reader = PdfReader(path)
+                st.subheader("💡 Answer")
+                st.write(answer)
 
-        text = ""
-
-        for page in reader.pages:
-
-            extracted = page.extract_text()
-
-            if extracted:
-                text += extracted
-
-    answer = answer_question(
-        query,
-        text[:4000]
-    )
-
-    st.subheader("Answer")
-
-    st.write(answer)
-
-    with st.expander("Source Document"):
-        st.write(filenames[best_idx])
-        st.write(text[:1000])
+                with st.expander(f"📄 Source Document: {filenames[best_idx]}"):
+                    st.text(text[:1500] + ("..." if len(text) > 1500 else ""))
